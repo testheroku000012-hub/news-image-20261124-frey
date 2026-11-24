@@ -1,53 +1,61 @@
 #!/usr/bin/env python3
-"""Entry point for news-image-20261124 — THE WORLD TODAY.
+"""Deliver the front page for news-image-20261124.
 
-Ships the front page (entry.png), which build.py draws at build time with
-Pillow, into MAKEFUN_OUTPUT_DIR. This file uses only the standard library:
-no third-party packages, no network access, no fonts at runtime. It reads
-the PNG header first (signature + IHDR width/height) and refuses to copy
-anything that is not a 1024x1024 PNG under the 1 MiB cap.
+The page itself (entry.png) is drawn at build time by build.py. This
+entry point only ships it: it opens the file next to this script,
+checks that it really is the 1024x1024 PNG we built (magic bytes,
+IHDR dimensions, 1 MiB cap), and writes the identical bytes into
+MAKEFUN_OUTPUT_DIR. Standard library only — no Pillow, no network,
+no fonts, no randomness.
 """
 import os
 import struct
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-SRC_NAME = "entry.png"
-MAX_BYTES = 1024 * 1024
-EXPECT_W, EXPECT_H = 1024, 1024
+BASE = os.path.dirname(os.path.abspath(__file__))
+FILE_NAME = "entry.png"
+BYTE_LIMIT = 1024 * 1024
+WANT_W, WANT_H = 1024, 1024
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
-def read_png(path):
-    with open(path, "rb") as fh:
-        data = fh.read()
-    if data[:8] != b"\x89PNG\r\n\x1a\n":
-        raise SystemExit("not a PNG file: bad signature")
-    if data[12:16] != b"IHDR":
-        raise SystemExit("not a PNG file: first chunk is not IHDR")
-    width, height = struct.unpack(">II", data[16:24])
-    return data, width, height
+def load_png(path):
+    """Read a PNG and return (bytes, width, height) after header checks."""
+    with open(path, "rb") as handle:
+        blob = handle.read()
+    if blob[:8] != PNG_MAGIC:
+        raise SystemExit("entry.png: bad PNG signature")
+    if blob[12:16] != b"IHDR":
+        raise SystemExit("entry.png: first chunk is not IHDR")
+    w, h = struct.unpack(">II", blob[16:24])
+    return blob, w, h
 
 
-def main():
-    src = os.path.join(HERE, SRC_NAME)
-    data, width, height = read_png(src)
-    if (width, height) != (EXPECT_W, EXPECT_H):
+def deliver(blob, width, height):
+    """Write the validated bytes into MAKEFUN_OUTPUT_DIR/entry.png."""
+    if (width, height) != (WANT_W, WANT_H):
         raise SystemExit(
-            f"bad dimensions {width}x{height}, expected "
-            f"{EXPECT_W}x{EXPECT_H}"
+            f"entry.png: {width}x{height}, want {WANT_W}x{WANT_H}"
         )
-    if len(data) > MAX_BYTES:
+    if len(blob) > BYTE_LIMIT:
         raise SystemExit(
-            f"entry.png too large: {len(data)} bytes > {MAX_BYTES}"
+            f"entry.png: {len(blob)} bytes exceeds {BYTE_LIMIT}"
         )
-    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "output")
-    os.makedirs(out_dir, exist_ok=True)
-    dst = os.path.join(out_dir, SRC_NAME)
-    with open(dst, "wb") as fh:
-        fh.write(data)
-    print(f"copied {SRC_NAME}: {width}x{height}, {len(data)} bytes -> {dst}")
+    target_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "output")
+    os.makedirs(target_dir, exist_ok=True)
+    target = os.path.join(target_dir, FILE_NAME)
+    with open(target, "wb") as handle:
+        handle.write(blob)
+    print(f"delivered {FILE_NAME}: {width}x{height}, "
+          f"{len(blob)} bytes -> {target}")
     return 0
 
 
+def run():
+    source = os.path.join(BASE, FILE_NAME)
+    blob, width, height = load_png(source)
+    return deliver(blob, width, height)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())
