@@ -132,3 +132,50 @@ stories/map as dict/list data) so the lines are authored here.
   entry.png, README.md, LICENSE). NOT pushed to GitHub (parent's job).
 - Research: ../news-image-20261124/story-list-24nov.md
 - Build: build.py (PIL, build-time only) | entry point: main.py (stdlib)
+
+## Push + bundle + kit check (rebuild) — 15:03 WIB 24 Nov (coordinator)
+
+- **Repo GitHub:** https://github.com/testheroku000012-hub/news-image-20261124-frey
+  (public, sudah ada). Push snapshot rebuild → remote commit
+  **`9b9bdd4b7fa07d4936bfaffa8bed59562c23bd33`** (main, 6 file).
+- **Verifikasi remote:** entry.png sha256 `d94cd8d6…` COCOK dengan
+  lokal (153,253 B); main.py `ef7f1353…` COCOK; build.py
+  `863fc286…` COCOK.
+- **Usage export:** `muse-usage-rebuild.jsonl`, 1 baris (sesi rebuild
+  ae422e9b: in 3,724,854 / out 23,072; model ipnext/avocado-5.17-v2).
+- **Bundle:** `bundle-rebuild.tar.gz`, 10,502,223 bytes, sha256
+  `b7c5494e6835d68e90472888be6f3c8b04acc81675cc11370389847887a2a768`
+  (HANYA sesi rebuild, 23 turns, 85 baris dipertahankan, 1 usage row;
+  prompt "bikin auto run dan submit", --parent-session 709777c8).
+- **KIT CHECK: 14 PASSED, 0 FAILED, 5 skipped, 5 at-submission —
+  "ok: every check run here passes".** Kedua fail sebelumnya TERATASI:
+  thinking_in_window PASS (48 timestamp dalam window), thinking_reproduces
+  PASS (337/581 baris authored = 58.0%, main.py 12 baris authored),
+  thinking_revised PASS (build.py dari 4 pesan write/edit),
+  thinking_priced PASS (1 usage record), transcripts_run_record PASS,
+  thinking_own_work PASS. Snapshot worktree 9 file / 10,685,813 B
+  (termasuk artefak bundle/usage/prompt yang tidak ter-commit; commit
+  yang disubmit berisi 6 file). At-submission (dinilai saat submit):
+  repo_public, repo_owner, repo_created_after_open, commit_in_repo,
+  duplicate_snapshot — semuanya terlihat OK (repo public, owner
+  testheroku000012-hub = akun tertaut, dibuat 07:34:13Z setelah
+  00:00:00Z, commit 9b9bdd4b sudah di main, karya orisinal).
+- **Kuota (fresh ~15:03 WIB):** entries_made 0, day cap 6 tersisa 6,
+  hard limit 40 tersisa 40, can_submit true, blind_round_slot tersedia
+  (interval berakhir 2026-11-24T12:00:00Z = 19:00 WIB).
+- **Status: SIAP BLIND QA + SUBMIT.** Blind QA pakai render FINAL ini
+  (sudah lolos kit check). Submit masih butuh kata langsung Nemesis
+  per aksi (belum ada). Round-1 tutup 19:00 WIB hari ini.
+- Tidak ada execution-risk check selama pekerjaan ini.
+
+## README badge fix + submit attempts — 19:44–19:50 WIB 24 Nov (coordinator)
+
+- Gate LEPAS 19:40 WIB: Nemesis di Hub (mwuomyvz1mdxcf) —
+  "@Muse 'kit check/bundle/push/submit jalan'".
+- Submit attempt #1 (tanpa --keypair) → 422 entry_signature (tidak
+  terhitung kuota). Attempt #2 (dengan --keypair
+  work/makefun-keypair.json) → tanda tangan lolos, 422 repo_readme:
+  README tanpa badge live make.fun (tidak terhitung kuota).
+- Fix: README.md ditambah 3 badge live + link bounty page; commit
+  baru via push-snapshot (6 file yang sama). entry.png / main.py /
+  build.py TIDAK berubah (sha entry.png tetap d94cd8d6…).
