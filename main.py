@@ -1,61 +1,47 @@
 #!/usr/bin/env python3
-"""Deliver the front page for news-image-20261124.
+"""Entry point for THE WORLD TODAY -- news-image-20261124 v2.
 
-The page itself (entry.png) is drawn at build time by build.py. This
-entry point only ships it: it opens the file next to this script,
-checks that it really is the 1024x1024 PNG we built (magic bytes,
-IHDR dimensions, 1 MiB cap), and writes the identical bytes into
-MAKEFUN_OUTPUT_DIR. Standard library only — no Pillow, no network,
-no fonts, no randomness.
+Copies the rendered entry.png shipped in this repository to the output
+directory the grader provides. Standard library only, no network,
+deterministic: the bytes written are exactly the bytes shipped, so
+two runs produce identical output.
 """
 import os
+import shutil
 import struct
 import sys
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-FILE_NAME = "entry.png"
-BYTE_LIMIT = 1024 * 1024
-WANT_W, WANT_H = 1024, 1024
-PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+PNG_SIG = b"\x89PNG\r\n\x1a\n"
+MAX_BYTES = 1048576
 
 
-def load_png(path):
-    """Read a PNG and return (bytes, width, height) after header checks."""
-    with open(path, "rb") as handle:
-        blob = handle.read()
-    if blob[:8] != PNG_MAGIC:
-        raise SystemExit("entry.png: bad PNG signature")
-    if blob[12:16] != b"IHDR":
-        raise SystemExit("entry.png: first chunk is not IHDR")
-    w, h = struct.unpack(">II", blob[16:24])
-    return blob, w, h
+def validate_png(data):
+    """Check the shipped file is a whole 1024x1024 PNG under 1 MiB."""
+    assert data[:8] == PNG_SIG, "not a PNG file"
+    assert len(data) <= MAX_BYTES, "entry.png over 1 MiB: %d" % len(data)
+    width, height = struct.unpack(">II", data[16:24])
+    assert (width, height) == (1024, 1024), "not 1024x1024: %dx%d" % (
+        width, height)
+    return len(data)
 
 
-def deliver(blob, width, height):
-    """Write the validated bytes into MAKEFUN_OUTPUT_DIR/entry.png."""
-    if (width, height) != (WANT_W, WANT_H):
-        raise SystemExit(
-            f"entry.png: {width}x{height}, want {WANT_W}x{WANT_H}"
-        )
-    if len(blob) > BYTE_LIMIT:
-        raise SystemExit(
-            f"entry.png: {len(blob)} bytes exceeds {BYTE_LIMIT}"
-        )
-    target_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "output")
-    os.makedirs(target_dir, exist_ok=True)
-    target = os.path.join(target_dir, FILE_NAME)
-    with open(target, "wb") as handle:
-        handle.write(blob)
-    print(f"delivered {FILE_NAME}: {width}x{height}, "
-          f"{len(blob)} bytes -> {target}")
+def output_dir():
+    return os.environ.get("MAKEFUN_OUTPUT_DIR", "output")
+
+
+def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    src = os.path.join(here, "entry.png")
+    with open(src, "rb") as fh:
+        data = fh.read()
+    size = validate_png(data)
+    dst_dir = output_dir()
+    os.makedirs(dst_dir, exist_ok=True)
+    dst = os.path.join(dst_dir, "entry.png")
+    shutil.copyfile(src, dst)
+    print("wrote %s (%d bytes)" % (dst, size))
     return 0
 
 
-def run():
-    source = os.path.join(BASE, FILE_NAME)
-    blob, width, height = load_png(source)
-    return deliver(blob, width, height)
-
-
 if __name__ == "__main__":
-    sys.exit(run())
+    sys.exit(main())
